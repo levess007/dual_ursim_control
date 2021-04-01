@@ -14,7 +14,7 @@ import json
 import logging
 import logging.config
 from configparser import ConfigParser
-from pynput.keyboard import Listener, Key
+#from pynput.keyboard import Listener, Key
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
@@ -857,8 +857,8 @@ if __name__ == '__main__':
 
     logging.info('Starting keyboard listener')
 
-    listener = Listener(on_press=on_press, on_release=on_release)
-    listener.start()
+    #listener = Listener(on_press=on_press, on_release=on_release)
+    #listener.start()
 
     if config.getboolean('MASTER_ENABLE'):
         master_thread = threading.Thread(name='MasterThread', target=master_thread, args=(sync_event, path_master))
@@ -874,8 +874,8 @@ if __name__ == '__main__':
     if config.getboolean('SLAVE_ENABLE'):
         slave_thread.join()
 
-    listener.stop()
-    listener.join()
+    #listener.stop()
+    #listener.join()
     logging.info("Done")
 
 # TODO: export from ursimulator: root@xu:/var/snap/docker/common/var-lib-docker/volumes/dockursim/_data/programs.UR3#
