@@ -1,0 +1,5 @@
+requests
+ur-rtde
+openpyxl
+pynput
+numpy
