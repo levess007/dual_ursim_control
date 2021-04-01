@@ -2,6 +2,7 @@
 
 import threading
 from os import wait, read
+import os.path
 
 import requests
 import socket
@@ -15,13 +16,18 @@ import logging.config
 from configparser import ConfigParser
 from pynput.keyboard import Listener, Key
 
+SCRIPT_DIR = os.path.dirname(__file__)
+
 config_object = ConfigParser()
-config_object.read('config.ini')
+config_object.read(os.path.join(SCRIPT_DIR, 'config.ini'))
 config = config_object['DEFAULT']
 
 # TODO: export these to json?
 # Config file name
-CONFIG_FILE = 'path.xlsx'
+#CONFIG_FILE = 'path.xlsx'
+
+CONFIG_FILE = os.path.join(SCRIPT_DIR, "path.xlsx")
+
 CONFIG_FILE_SHEET_NAME = 'Configurations'
 CONFIG_FILE_SHEET_MASTER = 'M'
 CONFIG_FILE_SHEET_SLAVE = 'S'
@@ -813,7 +819,7 @@ def slave_thread(sync_event, path):
 
 if __name__ == '__main__':
 
-    logging.config.fileConfig('log_config.ini')
+    logging.config.fileConfig(os.path.join(SCRIPT_DIR, 'log_config.ini'))
 
     if config['EXECUTION'] == 'SLOW':
         j_speed = config.getfloat('J_SPEED_SLOW')
