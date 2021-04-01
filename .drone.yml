@@ -1,0 +1,25 @@
+kind: pipeline
+type: docker
+name: default
+steps:
+
+  - name: code-analysis
+    image: aosapps/drone-sonar-plugin
+    settings:
+      sonar_host:
+        from_secret: SONAR_HOST
+      sonar_token:
+        from_secret: SONAR_CODE
+
+  - name: kaniko
+    image: banzaicloud/drone-kaniko
+    settings:
+      registry: registry.kmlabz.com
+      repo: universalrobots/${DRONE_REPO_NAME}
+      username:
+        from_secret: DOCKER_USERNAME
+      password:
+        from_secret: DOCKER_PASSWORD
+      tags:
+        - latest
+        - ${DRONE_BUILD_NUMBER}
