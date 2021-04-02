@@ -23,3 +23,10 @@ steps:
       tags:
         - latest
         - ${DRONE_BUILD_NUMBER}
+  - name: ms-teams
+    image: kuperiu/drone-teams
+    settings:
+      webhook: 
+        from_secret: TEAMS_WEBHOOK
+    when:
+      status: [ failure, changed ]
