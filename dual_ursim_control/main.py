@@ -15,6 +15,7 @@ import logging
 import logging.config
 from xmlrpc.server import SimpleXMLRPCServer
 from configparser import ConfigParser
+
 # from pynput.keyboard import Listener, Key
 
 SCRIPT_DIR = os.path.dirname(__file__)
@@ -25,7 +26,7 @@ config = config_object['DEFAULT']
 
 # TODO: export these to json?
 # Config file name
-#CONFIG_FILE = 'path.xlsx'
+# CONFIG_FILE = 'path.xlsx'
 
 CONFIG_FILE = os.path.join(SCRIPT_DIR, "path.xlsx")
 
@@ -39,7 +40,11 @@ j_acc = 0
 l_speed = 0
 l_acc = 0
 
-jogging_wait = {"Master": False, "Slave": False}
+# jogging_wait = {"Master": False, "Slave": False}
+jogging_event = {
+    'Master': threading.Event(),
+    'Slave': threading.Event()
+}
 
 path_master = {}
 path_slave = {}
@@ -253,52 +258,56 @@ def read_path_waypoints_from_file():
     return path_master, path_slave
 
 
-def on_press(key):
-    try:
-        # logging.debug("Key pressed: {0}".format(key))
-
-        if hasattr(key, 'char'):
-            if key.char == 'f':
-                jogging_wait['Master'] = True
-
-            elif key.char == 'e':
-                jogging_wait['Slave'] = True
-
-    except AttributeError:
-        logging.debug("Special key pressed: {0}".format(key))
-
-
-def on_release(key):
-    try:
-        # logging.debug("Key released: {0}".format(key))
-
-        if hasattr(key, 'char'):
-            if key.char == 'f':
-                jogging_wait['Master'] = False
-
-            elif key.char == 'e':
-                jogging_wait['Slave'] = False
-
-    except AttributeError:
-        logging.debug("Special key pressed: {0}".format(key))
+# def on_press(key):
+#     try:
+#         # logging.debug("Key pressed: {0}".format(key))
+#
+#         if hasattr(key, 'char'):
+#             if key.char == 'f':
+#                 jogging_wait['Master'] = True
+#
+#             elif key.char == 'e':
+#                 jogging_wait['Slave'] = True
+#
+#     except AttributeError:
+#         logging.debug("Special key pressed: {0}".format(key))
+#
+#
+# def on_release(key):
+#     try:
+#         # logging.debug("Key released: {0}".format(key))
+#
+#         if hasattr(key, 'char'):
+#             if key.char == 'f':
+#                 jogging_wait['Master'] = False
+#
+#             elif key.char == 'e':
+#                 jogging_wait['Slave'] = False
+#
+#     except AttributeError:
+#         logging.debug("Special key pressed: {0}".format(key))
 
 
 def master_jogging_wait():
     if config.getboolean('JOGGING_ENABLE'):
         logging.debug("Master-Fred: Press 'f' to continue")
 
-        while not jogging_wait['Master']:
-            pass
-        jogging_wait['Master'] = False
+        # while not jogging_wait['Master']:
+        #     pass
+        # jogging_wait['Master'] = False
+        jogging_event['Master'].clear()
+        jogging_event['Master'].wait()
 
 
 def slave_jogging_wait():
     if config.getboolean('JOGGING_ENABLE'):
         logging.debug("Slave-Erik: Press 'e' to continue")
 
-        while not jogging_wait['Slave']:
-            pass
-        jogging_wait['Slave'] = False
+        # while not jogging_wait['Slave']:
+        #     pass
+        # jogging_wait['Slave'] = False
+        jogging_event['Slave'].clear()
+        jogging_event['Slave'].wait()
 
 
 def master_operate_gripper(target_width):
@@ -821,21 +830,21 @@ def slave_thread(sync_event, path):
 
 
 class RemoteFuncs:
-    def signal(self, robot):
-        if robot == 'M':
-            jogging_wait['Master'] = True
-            return 0
-        elif robot == 'S':
-            jogging_wait['Slave'] = True
-            return 0
-        else:
-            logging.debug("Wrong XMLRPC signal input. Value: {0}".format(robot))
-            return 1
+    def signalMaster(self):
+        # jogging_wait['Master'] = True
+        jogging_event['Master'].set()
+        return 0
+
+    def signalSlave(self):
+        # jogging_wait['Slave'] = True
+        jogging_event['Slave'].set()
+        return 0
 
 
 class ServerThread(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
+        self.daemon = True
         self.localServer = SimpleXMLRPCServer(('0.0.0.0', 8888))
         self.localServer.register_instance(RemoteFuncs())
 
@@ -883,7 +892,6 @@ if __name__ == '__main__':
 
     logging.info('Spawning XMLRPC listener thread')
     xmlrpcServer = ServerThread()
-    xmlrpcServer.daemon = True
     xmlrpcServer.start()
 
     # listener = Listener(on_press=on_press, on_release=on_release)
