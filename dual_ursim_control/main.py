@@ -13,8 +13,9 @@ import openpyxl
 import json
 import logging
 import logging.config
+from xmlrpc.server import SimpleXMLRPCServer
 from configparser import ConfigParser
-#from pynput.keyboard import Listener, Key
+# from pynput.keyboard import Listener, Key
 
 SCRIPT_DIR = os.path.dirname(__file__)
 
@@ -288,6 +289,7 @@ def master_jogging_wait():
 
         while not jogging_wait['Master']:
             pass
+        jogging_wait['Master'] = False
 
 
 def slave_jogging_wait():
@@ -296,6 +298,7 @@ def slave_jogging_wait():
 
         while not jogging_wait['Slave']:
             pass
+        jogging_wait['Slave'] = False
 
 
 def master_operate_gripper(target_width):
@@ -817,6 +820,29 @@ def slave_thread(sync_event, path):
     logging.info('Done')
 
 
+class RemoteFuncs:
+    def signal(self, robot):
+        if robot == 'M':
+            jogging_wait['Master'] = True
+            return 0
+        elif robot == 'S':
+            jogging_wait['Slave'] = True
+            return 0
+        else:
+            logging.debug("Wrong XMLRPC signal input. Value: {0}".format(robot))
+            return 1
+
+
+class ServerThread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+        self.localServer = SimpleXMLRPCServer(('0.0.0.0', 8888))
+        self.localServer.register_instance(RemoteFuncs())
+
+    def run(self):
+        self.localServer.serve_forever()
+
+
 if __name__ == '__main__':
 
     logging.config.fileConfig(os.path.join(SCRIPT_DIR, 'log_config.ini'))
@@ -855,10 +881,13 @@ if __name__ == '__main__':
         'Slave': threading.Event()
     }
 
-    logging.info('Starting keyboard listener')
+    logging.info('Spawning XMLRPC listener thread')
+    xmlrpcServer = ServerThread()
+    xmlrpcServer.daemon = True
+    xmlrpcServer.start()
 
-    #listener = Listener(on_press=on_press, on_release=on_release)
-    #listener.start()
+    # listener = Listener(on_press=on_press, on_release=on_release)
+    # listener.start()
 
     if config.getboolean('MASTER_ENABLE'):
         master_thread = threading.Thread(name='MasterThread', target=master_thread, args=(sync_event, path_master))
@@ -874,9 +903,8 @@ if __name__ == '__main__':
     if config.getboolean('SLAVE_ENABLE'):
         slave_thread.join()
 
-    #listener.stop()
-    #listener.join()
+    # listener.stop()
+    # listener.join()
     logging.info("Done")
 
 # TODO: export from ursimulator: root@xu:/var/snap/docker/common/var-lib-docker/volumes/dockursim/_data/programs.UR3#
-
