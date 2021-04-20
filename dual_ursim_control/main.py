@@ -15,14 +15,11 @@ import logging
 import logging.config
 from xmlrpc.server import SimpleXMLRPCServer
 from configparser import ConfigParser
+from config import Config
 
 # from pynput.keyboard import Listener, Key
 
 SCRIPT_DIR = os.path.dirname(__file__)
-
-config_object = ConfigParser()
-config_object.read(os.path.join(SCRIPT_DIR, 'config.ini'))
-config = config_object['DEFAULT']
 
 # TODO: export these to json?
 # Config file name
@@ -258,54 +255,18 @@ def read_path_waypoints_from_file():
     return path_master, path_slave
 
 
-# def on_press(key):
-#     try:
-#         # logging.debug("Key pressed: {0}".format(key))
-#
-#         if hasattr(key, 'char'):
-#             if key.char == 'f':
-#                 jogging_wait['Master'] = True
-#
-#             elif key.char == 'e':
-#                 jogging_wait['Slave'] = True
-#
-#     except AttributeError:
-#         logging.debug("Special key pressed: {0}".format(key))
-#
-#
-# def on_release(key):
-#     try:
-#         # logging.debug("Key released: {0}".format(key))
-#
-#         if hasattr(key, 'char'):
-#             if key.char == 'f':
-#                 jogging_wait['Master'] = False
-#
-#             elif key.char == 'e':
-#                 jogging_wait['Slave'] = False
-#
-#     except AttributeError:
-#         logging.debug("Special key pressed: {0}".format(key))
-
-
 def master_jogging_wait():
-    if config.getboolean('JOGGING_ENABLE'):
+    if Config.JOGGING_ENABLE:
         logging.debug("Master-Fred: Press 'f' to continue")
 
-        # while not jogging_wait['Master']:
-        #     pass
-        # jogging_wait['Master'] = False
         jogging_event['Master'].clear()
         jogging_event['Master'].wait()
 
 
 def slave_jogging_wait():
-    if config.getboolean('JOGGING_ENABLE'):
+    if Config.JOGGING_ENABLE:
         logging.debug("Slave-Erik: Press 'e' to continue")
 
-        # while not jogging_wait['Slave']:
-        #     pass
-        # jogging_wait['Slave'] = False
         jogging_event['Slave'].clear()
         jogging_event['Slave'].wait()
 
@@ -318,7 +279,7 @@ def master_operate_gripper(target_width):
         return
 
     port = 30001
-    host = config['MASTER_IP']
+    host = Config.MASTER_IP
     tcp_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     tcp_socket.connect((host, port))
 
@@ -486,10 +447,10 @@ def master_gripper_toggle(state='Open'):
     # This function accepts either 'Open' or 'Close'
 
     if state == 'Open':
-        master_operate_gripper(config.getint('MASTER_GRIPPER_WIDTH_OPENED'))
+        master_operate_gripper(Config.MASTER_GRIPPER_WIDTH_OPENED)
 
     elif state == 'Close':
-        master_operate_gripper(config.getint('MASTER_GRIPPER_WIDTH_CLOSED'))
+        master_operate_gripper(Config.MASTER_GRIPPER_WIDTH_CLOSED)
 
     else:
         logging.info('Invalid gripper option given')
@@ -498,15 +459,15 @@ def master_gripper_toggle(state='Open'):
 
 def master_connect():
     try:
-        robot = rtde_control.RTDEControlInterface(config['MASTER_IP'])
+        robot = rtde_control.RTDEControlInterface(Config.MASTER_IP)
 
     except:
-        text = f"Cannot connect to robot at: {config['MASTER_IP']}"
+        text = f"Cannot connect to robot at: {Config.MASTER_IP}"
 
         logging.info(text)
         exit(text)
 
-    logging.info(f"Connected to robot at: {config['MASTER_IP']}")
+    logging.info(f"Connected to robot at: {Config.MASTER_IP}")
 
     # robot.setPayload(1, (0, 0, 0.01))
     return robot
@@ -514,15 +475,15 @@ def master_connect():
 
 def slave_connect():
     try:
-        robot = rtde_control.RTDEControlInterface(config['SLAVE_IP'])
+        robot = rtde_control.RTDEControlInterface(Config.SLAVE_IP)
 
     except:
-        text = f"Cannot connect to robot at: {config['SLAVE_IP']}"
+        text = f"Cannot connect to robot at: {Config.SLAVE_IP}"
 
         logging.info(text)
         exit(text)
 
-    logging.info(f"Connected to robot at: {config['SLAVE_IP']}")
+    logging.info(f"Connected to robot at: {Config.SLAVE_IP}")
 
     # robot.setPayload(1, (0, 0, 0.01))
     return robot
@@ -544,13 +505,13 @@ def slave_gripper_toggle(state='Open'):
     logging.info(f'Slave RG2-FT gripper state: {state} ')
     # This function accepts either 'Open' or 'Close'
 
-    ip = config['SLAVE_GRIPPER_IP']
+    ip = Config.SLAVE_GRIPPER_IP
 
     if state == 'Open':
-        width = config.getint('SLAVE_GRIPPER_WIDTH_OPENED')
+        width = Config.SLAVE_GRIPPER_WIDTH_OPENED
 
     elif state == 'Close':
-        width = config.getint('SLAVE_GRIPPER_WIDTH_CLOSED')
+        width = Config.SLAVE_GRIPPER_WIDTH_CLOSED
     else:
         # log error
         logging.info('Invalid gripper option given')
@@ -567,7 +528,7 @@ def master_movel_time_based(pose, a=1, v=0.06, t=2):
     message = f"movel(p{pose}, a={a}, v={v}, t={t}, r=0)\n"
     logging.info(f'Time-based movel: {message}')
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((config['MASTER_IP'], 30001))
+    s.connect((Config.MASTER_IP, 30001))
 
     s.send(str.encode(message))
     s.close()
@@ -579,38 +540,12 @@ def slave_movel_time_based(pose, a=1, v=0.06, t=2):
     message = f"movel(p{pose}, a={a}, v={v}, t={t}, r=0)\n"
     logging.info(f'Time-based movel: {message}')
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    s.connect((config['SlAVE_IP'], 30001))
+    s.connect((Config.SLAVE_IP, 30001))
 
     s.send(str.encode(message))
     s.close()
     time.sleep(t + 0.05)
     return
-
-
-# def move_marcell_sync_begin():
-#
-#     message = "movel(p[0.116, -0.394, 0.0, 0.608, -1.48, 0.621], a=1, v=0.06, t=5, r=0)\n"
-#     logging.debug(message)
-#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     s.connect((config['MASTER_IP'], 30001))
-#
-#     s.send(str.encode(message))
-#     s.close()
-#     time.sleep(5)
-#     return
-#
-# def move_marcell_snync_end():
-#     message = "movel(p[0.066, -0.444, 0.0, 0.572, -1.49, 0.585], a=1, v=0.06, t=5, r=0)\n"
-#
-#     logging.debug(message)
-#     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-#     s.connect((config['MASTER_IP'], 30001))
-#
-#     s.send(str.encode(message))
-#     s.close()
-#     time.sleep(5)
-#
-#     return
 
 
 def master_thread(sync_event, path):
@@ -658,7 +593,7 @@ def master_thread(sync_event, path):
     robot.moveJ(path['CM4_J'], j_speed, j_acc)
     logging.info(f'CM4: M Sync Begin')
 
-    if config.getboolean('SLAVE_ENABLE'):
+    if Config.SLAVE_ENABLE:
         sync_event['Master'].set()
         logging.info('Signaling to slave')
 
@@ -684,7 +619,7 @@ def master_thread(sync_event, path):
     # robot = master_connect()
     # return
 
-    if config.getboolean('SLAVE_ENABLE'):
+    if Config.SLAVE_ENABLE:
         logging.debug('Waiting for slave')
 
         sync_event['Slave'].wait()
@@ -753,7 +688,7 @@ def slave_thread(sync_event, path):
 
     time.sleep(0.5)
 
-    if config.getboolean('MASTER_ENABLE'):
+    if Config.MASTER_ENABLE:
         logging.debug('Waiting for master')
 
         sync_event['Master'].wait()
@@ -766,7 +701,7 @@ def slave_thread(sync_event, path):
     # robot = slave_connect()
     logging.info(f'CS5: S Sync End')
 
-    if config.getboolean('MASTER_ENABLE'):
+    if Config.MASTER_ENABLE:
         sync_event['Slave'].set()
         logging.debug('Signaling to master')
 
@@ -800,7 +735,7 @@ def slave_thread(sync_event, path):
     robot.moveJ(path['CS3_J'], j_speed, j_acc)
     logging.info(f'CS3: S Start Oriented')
 
-    if config.getboolean('MASTER_ENABLE'):
+    if Config.MASTER_ENABLE:
         sync_event['Slave'].set()
         logging.debug('Signaling to master')
 
@@ -853,28 +788,27 @@ class ServerThread(threading.Thread):
 
 
 if __name__ == '__main__':
-
     logging.config.fileConfig(os.path.join(SCRIPT_DIR, 'log_config.ini'))
 
-    if config['EXECUTION'] == 'SLOW':
-        j_speed = config.getfloat('J_SPEED_SLOW')
-        l_speed = config.getfloat('L_SPEED_SLOW')
+    if Config.EXECUTION == 'SLOW':
+        j_speed = Config.J_SPEED_SLOW
+        l_speed = Config.L_SPEED_SLOW
 
-        j_acc = config.getfloat('J_ACC_SLOW')
-        l_acc = config.getfloat('L_ACC_SLOW')
+        j_acc = Config.J_ACC_SLOW
+        l_acc = Config.L_ACC_SLOW
 
         logging.info("Execution speed: slow")
 
-    elif config['EXECUTION'] == 'FAST':
-        j_speed = config.getfloat('J_SPEED_FAST')
-        l_speed = config.getfloat('L_SPEED_FAST')
+    elif Config.EXECUTION == 'FAST':
+        j_speed = Config.J_SPEED_FAST
+        l_speed = Config.L_SPEED_FAST
 
-        j_acc = config.getfloat('J_ACC_FAST')
-        l_acc = config.getfloat('L_ACC_FAST')
+        j_acc = Config.J_ACC_FAST
+        l_acc = Config.L_ACC_FAST
 
         logging.info("Execution speed: fast")
 
-    if config.getboolean('JOGGING_ENABLE'):
+    if Config.JOGGING_ENABLE:
         logging.info('Jogging enabled')
 
     # TODO: eliminate excel
@@ -894,25 +828,18 @@ if __name__ == '__main__':
     xmlrpcServer = ServerThread()
     xmlrpcServer.start()
 
-    # listener = Listener(on_press=on_press, on_release=on_release)
-    # listener.start()
-
-    if config.getboolean('MASTER_ENABLE'):
+    if Config.MASTER_ENABLE:
         master_thread = threading.Thread(name='MasterThread', target=master_thread, args=(sync_event, path_master))
         master_thread.start()
 
-    if config.getboolean('SLAVE_ENABLE'):
+    if Config.SLAVE_ENABLE:
         slave_thread = threading.Thread(name='SlaveThread', target=slave_thread, args=(sync_event, path_slave))
         slave_thread.start()
 
-    if config.getboolean('MASTER_ENABLE'):
+    if Config.MASTER_ENABLE:
         master_thread.join()
 
-    if config.getboolean('SLAVE_ENABLE'):
+    if Config.SLAVE_ENABLE:
         slave_thread.join()
 
-    # listener.stop()
-    # listener.join()
     logging.info("Done")
-
-# TODO: export from ursimulator: root@xu:/var/snap/docker/common/var-lib-docker/volumes/dockursim/_data/programs.UR3#
