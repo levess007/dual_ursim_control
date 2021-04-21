@@ -1,0 +1,36 @@
+version: "3.3"
+services:
+  controller:
+    build: .
+    ports:
+      - "8888:8888"
+    environment:
+      - MASTER_IP=10.150.0.3
+      - SLAVE_IP=10.150.0.1
+      #BME lab Configuration
+      # Fred
+      #MASTER_IP=10.6.6.12
+      # Erik
+      #SLAVE_IP=10.6.6.10
+      # Master: RG2 Gripper
+      - MASTER_GRIPPER_WIDTH_OPENED=50
+      - MASTER_GRIPPER_WIDTH_CLOSED=28
+      # Slave: RG2FT Gripper
+      - SLAVE_GRIPPER_IP=10.150.0.2
+      - SLAVE_GRIPPER_WIDTH_OPENED=90
+      - SLAVE_GRIPPER_WIDTH_CLOSED=28
+      - MASTER_ENABLE=1
+      - SLAVE_ENABLE=1
+      - JOGGING_ENABLE=0
+      - EXECUTION=SLOW
+      #EXECUTION=FAST
+      #Used with moveL
+      - L_SPEED_SLOW=0.05
+      - L_SPEED_FAST=0.1
+      - L_ACC_SLOW=0.75
+      - L_ACC_FAST=0.75
+      #Used with moveJ
+      - J_SPEED_SLOW=1
+      - J_SPEED_FAST=1
+      - J_ACC_SLOW=4
+      - J_ACC_FAST=4

@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: dualurcontrolpod
+spec:
+  containers:
+    - name: dualursimcontroller
+      image: 10.0.0.1:5000/dualursimcontrol_controller
+      envFrom:
+      - configMapRef:
+          name: robot-config
+  restartPolicy: Never
+
